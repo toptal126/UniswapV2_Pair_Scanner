@@ -128,7 +128,7 @@ async function main() {
         return updateDBItem;
     };
 
-    for (let i = 0; i < pairLength; i += 100) {
+    for (let i = startPair - 100; i < pairLength; i += 100) {
         let idArr = Array.from(
             { length: 100 },
             (_, offset) => i + offset

@@ -48,6 +48,7 @@ const tokenInfoPCSV2Api = async (address, pairIndex) => {
         return data;
     } catch (error) {
         console.log(address, "panackeswap api error with pair ", pairIndex);
+        process.exit();
     }
 };
 
@@ -128,6 +129,7 @@ async function main() {
             return updateDBItem;
         } catch (error) {
             console.log("error", pairIndex, error);
+            process.exit();
         }
     };
 

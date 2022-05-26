@@ -67,7 +67,6 @@ async function main() {
 
     if (lastPairIndex.length === 0) startPair = 0;
     else startPair = lastPairIndex[0].pairIndex;
-    KConsole.cyan("Starting Pair Id =>", startPair);
     const pcsV2Contract = await factoryContract(V2_FACTORY_ADDRESS);
     const pairLength = await pcsV2Contract.methods.allPairsLength().call();
 
@@ -132,6 +131,9 @@ async function main() {
         }
     };
 
+    if (process.argv[2]) startPair = process.argv[2];
+
+    KConsole.cyan("Starting Pair Id =>", startPair - 100);
     for (let i = startPair - 100; i < pairLength; i += 100) {
         let idArr = Array.from(
             { length: 100 },

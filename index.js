@@ -84,6 +84,8 @@ async function main() {
                 pairContract.methods.getReserves().call(),
             ]);
 
+            if (reserves.reserve0 == 0 || reserves.reserve1 == 0) return;
+
             const token0Contract = erc20Contract(token0);
             const token1Contract = erc20Contract(token1);
 

@@ -76,7 +76,6 @@ async function main() {
             const pairAddress = await pcsV2Contract.methods
                 .allPairs(pairIndex)
                 .call();
-
             const pairContract = v2PairContract(pairAddress);
             const [token0, token1, reserves] = await Promise.all([
                 pairContract.methods.token0().call(),
@@ -84,51 +83,60 @@ async function main() {
                 pairContract.methods.getReserves().call(),
             ]);
 
-            if (reserves.reserve0 == 0 || reserves.reserve1 == 0) return;
+            if (reserves._reserve0 == 0 || reserves._reserve1 == 0) return;
+            try {
+                const token0Contract = erc20Contract(token0);
+                const token1Contract = erc20Contract(token1);
 
-            const token0Contract = erc20Contract(token0);
-            const token1Contract = erc20Contract(token1);
+                const [token0Decimals, token1Decimals] = await Promise.all([
+                    token0Contract.methods.decimals().call(),
+                    token1Contract.methods.decimals().call(),
+                ]);
 
-            const [token0Decimals, token1Decimals] = await Promise.all([
-                token0Contract.methods.decimals().call(),
-                token1Contract.methods.decimals().call(),
-            ]);
+                const [pcsV2ResultToken0, pcsV2ResultToken1] =
+                    await Promise.all([
+                        tokenInfoPCSV2Api(token0, pairIndex),
+                        tokenInfoPCSV2Api(token1, pairIndex),
+                    ]);
 
-            const [pcsV2ResultToken0, pcsV2ResultToken1] = await Promise.all([
-                tokenInfoPCSV2Api(token0, pairIndex),
-                tokenInfoPCSV2Api(token1, pairIndex),
-            ]);
+                const updateDBItem = {
+                    pairIndex,
+                    pairAddress,
+                    token0,
+                    token1,
+                    token0Name: pcsV2ResultToken0.data.name,
+                    token1Name: pcsV2ResultToken1.data.name,
+                    token0Symbol: pcsV2ResultToken0.data.symbol,
+                    token1Symbol: pcsV2ResultToken1.data.symbol,
+                    token0Decimals,
+                    token1Decimals,
+                    reserve0: reserves._reserve0,
+                    reserve1: reserves._reserve1,
+                    token0Price: parseFloat(pcsV2ResultToken0.data.price),
+                    token1Price: parseFloat(pcsV2ResultToken1.data.price),
+                    reserve_usd:
+                        ((parseFloat(pcsV2ResultToken0.data.price) *
+                            reserves._reserve0) /
+                            10 ** token0Decimals) *
+                        2,
+                };
 
-            const updateDBItem = {
-                pairIndex,
-                pairAddress,
-                token0,
-                token1,
-                token0Name: pcsV2ResultToken0.data.name,
-                token1Name: pcsV2ResultToken1.data.name,
-                token0Symbol: pcsV2ResultToken0.data.symbol,
-                token1Symbol: pcsV2ResultToken1.data.symbol,
-                token0Decimals,
-                token1Decimals,
-                reserve0: reserves._reserve0,
-                reserve1: reserves._reserve1,
-                token0Price: parseFloat(pcsV2ResultToken0.data.price),
-                token1Price: parseFloat(pcsV2ResultToken1.data.price),
-                reserve_usd:
-                    ((parseFloat(pcsV2ResultToken0.data.price) *
-                        reserves._reserve0) /
-                        10 ** token0Decimals) *
-                    2,
-            };
-
-            // KConsole.cyan(updateDBItem);
-            // if (updateDBItem.reserve_usd ===)
-            await collection.updateOne(
-                { pairIndex: pairIndex },
-                { $set: updateDBItem },
-                { upsert: true }
-            );
-            return updateDBItem;
+                // KConsole.cyan(updateDBItem);
+                // if (updateDBItem.reserve_usd ===)
+                await collection.updateOne(
+                    { pairIndex: pairIndex },
+                    { $set: updateDBItem },
+                    { upsert: true }
+                );
+                return updateDBItem;
+            } catch (error) {
+                console.log(
+                    "error with processing pair",
+                    pairAddress,
+                    pairIndex
+                );
+                return;
+            }
         } catch (error) {
             console.log("error", pairIndex, error);
             process.exit();

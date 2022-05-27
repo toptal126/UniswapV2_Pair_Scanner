@@ -34,22 +34,29 @@ const moralisTokenApi = async (address) => {
 };
 
 const tokenInfoPCSV2Api = async (address, pairIndex) => {
-    try {
-        const response = await fetch(
-            `https://api.pancakeswap.info/api/v2/tokens/${address}`,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-KEY": MORALIS_API_KEY,
-                },
-            }
-        );
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.log(address, "panackeswap api error with pair ", pairIndex);
-        process.exit();
-    }
+    let i = 0;
+    while (i < 5)
+        try {
+            const response = await fetch(
+                `https://api.pancakeswap.info/api/v2/tokens/${address}`,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-API-KEY": MORALIS_API_KEY,
+                    },
+                }
+            );
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.log(
+                address,
+                `panackeswap api error with pair :try again ${i} times`,
+                pairIndex
+            );
+            i++;
+        }
+    process.exit();
 };
 
 async function main() {

@@ -219,7 +219,7 @@ async function main() {
 }
 const updateTopPairs = async () => {
     let cap = 1000000;
-    if (process.argv[3]) cap = process.argv[2];
+    if (process.argv[3]) cap = parseInt(process.argv[3]);
     let batchCount = 500;
     await connectDB();
     let topPairIndex = await collection
@@ -228,7 +228,7 @@ const updateTopPairs = async () => {
         // .limit(1000)
         .toArray();
 
-    KConsole.cyan(`Pairs larger than million ${topPairIndex.length}`);
+    KConsole.cyan(`Their are ${topPairIndex.length} pairs larger than $${cap}`);
 
     const pcsV2Contract = await factoryContract(V2_FACTORY_ADDRESS);
     const pairLength = await pcsV2Contract.methods.allPairsLength().call();

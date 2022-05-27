@@ -185,23 +185,25 @@ async function main() {
 
     KConsole.cyan(pairLength);
 }
-async function updateTop1000() {
+async function updateTopPairs() {
     let skip = 0;
     if (process.argv[3]) skip = process.argv[2];
     await connectDB();
-    let top1000PairIndex = await collection
-        .find()
+    let topPairIndex = await collection
+        .find({ reserve_usd: { $gt: 1000000 } })
         .sort({ reserve_usd: -1 }, { pairIndex: 1 })
         .skip(skip)
-        .limit(1000)
+        // .limit(1000)
         .toArray();
+
+    KConsole.cyan(`Pairs larger than million ${topPairIndex.length}`);
 
     const pcsV2Contract = await factoryContract(V2_FACTORY_ADDRESS);
     const pairLength = await pcsV2Contract.methods.allPairsLength().call();
-    for (i = 0; i < top1000PairIndex.length; i += 100) {
+    for (i = 0; i < topPairIndex.length; i += 100) {
         let idArr = Array.from(
             { length: 100 },
-            (_, offset) => top1000PairIndex.at(i + offset).pairIndex
+            (_, offset) => topPairIndex.at(i + offset).pairIndex
         ).filter((item) => item < pairLength);
 
         KConsole.cyan(`processing 100 from `, i);
@@ -214,5 +216,5 @@ async function updateTop1000() {
     }
 }
 if (process.argv[2] === "update-top")
-    updateTop1000().then(console.log).catch(console.error).finally();
+    updateTopPairs().then(console.log).catch(console.error).finally();
 else main().then(console.log).catch(console.error).finally();

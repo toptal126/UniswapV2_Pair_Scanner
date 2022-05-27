@@ -210,6 +210,7 @@ async function updateTop1000() {
                 getPairInfobyIndex(pairIndex, pcsV2Contract)
             )
         );
+        KConsole.cyan(`processing 100 from ${i} done!`);
     }
 }
 if (process.argv[2] === "update-top")

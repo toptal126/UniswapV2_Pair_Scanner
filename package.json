@@ -6,6 +6,7 @@
     "scripts": {
         "start": "node index",
         "update-top": "node index update-top",
+        "remove-zero": "node index remove-zero",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [

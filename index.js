@@ -150,6 +150,7 @@ const getPairInfobyIndex = async (pairIndex, pcsV2Contract) => {
 };
 async function main() {
     let startPair = 0;
+    let batchCount = 1000;
     await connectDB();
     const lastPairIndex = await collection
         .find()
@@ -162,13 +163,12 @@ async function main() {
     else startPair = lastPairIndex[0].pairIndex;
     const pcsV2Contract = await factoryContract(V2_FACTORY_ADDRESS);
     const pairLength = await pcsV2Contract.methods.allPairsLength().call();
-
     if (process.argv[2]) startPair = process.argv[2];
 
-    KConsole.cyan("Starting Pair Id =>", startPair - 100);
-    for (let i = startPair - 100; i < pairLength; i += 100) {
+    KConsole.cyan("Starting Pair Id =>", startPair - batchCount);
+    for (let i = startPair - batchCount; i < pairLength; i += batchCount) {
         let idArr = Array.from(
-            { length: 100 },
+            { length: batchCount },
             (_, offset) => i + offset
         ).filter((item) => item < pairLength);
 
@@ -185,7 +185,7 @@ async function main() {
 
     KConsole.cyan(pairLength);
 }
-async function updateTopPairs() {
+const updateTopPairs = async () => {
     let skip = 0;
     if (process.argv[3]) skip = process.argv[2];
     await connectDB();
@@ -214,7 +214,19 @@ async function updateTopPairs() {
         );
         KConsole.cyan(`processing 100 from ${i} done!`);
     }
-}
+};
+
+const remoZero = async () => {
+    await connectDB();
+    let emptyLength = await collection.deleteMany({ reserve_usd: 0 });
+    KConsole.cyan(`Pairs with empty reserve ${emptyLength.length}`);
+};
+
 if (process.argv[2] === "update-top")
-    updateTopPairs().then(console.log).catch(console.error).finally();
-else main().then(console.log).catch(console.error).finally();
+    updateTopPairs()
+        .then(console.log)
+        .catch(console.error)
+        .finally(process.exit);
+else if (process.argv[2] === "remove-zero")
+    remoZero().then(console.log).catch(console.error).finally(process.exit);
+else main().then(console.log).catch(console.error).finally(process.exit);

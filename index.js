@@ -23,6 +23,21 @@ let collection;
 
 const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
+const FIXED_PRICE_TOKENS = [
+    {
+        address: "0x55d398326f99059fF775485246999027B3197955",
+        price: 1,
+    },
+    {
+        address: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        price: 1,
+    },
+    {
+        address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+        price: 1,
+    },
+];
+
 const connectDB = async () => {
     await client.connect();
     console.log("Connected successfully to server");
@@ -104,8 +119,25 @@ const getPairInfobyIndex = async (pairIndex, pcsV2Contract) => {
                         reserves._reserve0) /
                         10 ** token0Decimals) *
                     2;
-            } // if (token1 === WBNB_ADDRESS)
-            else {
+            } else if (
+                FIXED_PRICE_TOKENS.filter(
+                    (item) => item.address === token0 || item.address === token1
+                ).length >= 0
+            ) {
+                FIXED_PRICE_TOKENS.forEach((item) => {
+                    if (item.address === token0) {
+                        reserve_usd =
+                            ((parseFloat(item.price) * reserves._reserve0) /
+                                10 ** token0Decimals) *
+                            2;
+                    } else if (item.address === token1) {
+                        reserve_usd =
+                            ((parseFloat(item.price) * reserves._reserve1) /
+                                10 ** token1Decimals) *
+                            2;
+                    }
+                });
+            } else {
                 reserve_usd =
                     ((parseFloat(pcsV2ResultToken1.data.price) *
                         reserves._reserve1) /
@@ -186,13 +218,13 @@ async function main() {
     KConsole.cyan(pairLength);
 }
 const updateTopPairs = async () => {
-    let skip = 0;
-    if (process.argv[3]) skip = process.argv[2];
+    let cap = 1000000;
+    if (process.argv[3]) cap = process.argv[2];
+    let batchCount = 500;
     await connectDB();
     let topPairIndex = await collection
-        .find({ reserve_usd: { $gt: 1000000 } })
+        .find({ reserve_usd: { $gt: cap } })
         .sort({ reserve_usd: -1 }, { pairIndex: 1 })
-        .skip(skip)
         // .limit(1000)
         .toArray();
 
@@ -200,25 +232,35 @@ const updateTopPairs = async () => {
 
     const pcsV2Contract = await factoryContract(V2_FACTORY_ADDRESS);
     const pairLength = await pcsV2Contract.methods.allPairsLength().call();
-    for (i = 0; i < topPairIndex.length; i += 100) {
+    for (i = 0; i < topPairIndex.length; i += batchCount) {
         let idArr = Array.from(
-            { length: 100 },
-            (_, offset) => topPairIndex.at(i + offset).pairIndex
-        ).filter((item) => item < pairLength);
+            { length: batchCount },
+            (_, offset) => topPairIndex.at(i + offset)?.pairIndex
+        ).filter((item) => item !== undefined);
 
-        KConsole.cyan(`processing 100 from `, i);
+        KConsole.cyan(`processing ${batchCount} from `, i);
         await Promise.all(
             idArr.map((pairIndex) =>
                 getPairInfobyIndex(pairIndex, pcsV2Contract)
             )
         );
-        KConsole.cyan(`processing 100 from ${i} done!`);
+        KConsole.cyan(`processing ${batchCount} from ${i} done!`);
     }
 };
 
 const remoZero = async () => {
     await connectDB();
     let emptyLength = await collection.deleteMany({ reserve_usd: 0 });
+    KConsole.cyan(`Pairs with empty reserve ${emptyLength.length}`);
+};
+
+const dirtyPairs = async () => {
+    const dirtyPairArr = [];
+
+    await connectDB();
+    let emptyLength = await collection.deleteMany({
+        pairAddress: { $in: dirtyPairArr },
+    });
     KConsole.cyan(`Pairs with empty reserve ${emptyLength.length}`);
 };
 
@@ -229,4 +271,6 @@ if (process.argv[2] === "update-top")
         .finally(process.exit);
 else if (process.argv[2] === "remove-zero")
     remoZero().then(console.log).catch(console.error).finally(process.exit);
+else if (process.argv[2] === "dirty-pairs")
+    dirtyPairs().then(console.log).catch(console.error).finally(process.exit);
 else main().then(console.log).catch(console.error).finally(process.exit);

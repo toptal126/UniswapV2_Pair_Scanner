@@ -7,6 +7,7 @@
         "start": "node index",
         "update-top": "node index update-top",
         "remove-zero": "node index remove-zero",
+        "dirty-pairs": "node index dirty-pairs",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [

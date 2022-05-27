@@ -122,7 +122,7 @@ const getPairInfobyIndex = async (pairIndex, pcsV2Contract) => {
             } else if (
                 FIXED_PRICE_TOKENS.filter(
                     (item) => item.address === token0 || item.address === token1
-                ).length >= 0
+                ).length > 0
             ) {
                 FIXED_PRICE_TOKENS.forEach((item) => {
                     if (item.address === token0) {

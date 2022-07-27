@@ -211,7 +211,7 @@ async function main() {
                 getPairInfobyIndex(pairIndex, pcsV2Contract)
             )
         );
-        // console.log(pairInfoArr);
+        //(pairInfoArr);
         KConsole.cyan(`updating database ${i} ~ ${idArr.at(-1)}: finished`);
     }
 

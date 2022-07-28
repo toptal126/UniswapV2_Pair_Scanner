@@ -225,7 +225,6 @@ const updateTopPairs = async () => {
     let topPairIndex = await collection
         .find({ reserve_usd: { $gt: cap } })
         .sort({ reserve_usd: -1 }, { pairIndex: 1 })
-        // .limit(1000)
         .toArray();
 
     KConsole.cyan(`Their are ${topPairIndex.length} pairs larger than $${cap}`);
